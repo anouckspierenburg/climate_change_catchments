@@ -61,7 +61,7 @@ def timeseries_stations_validation_ci(path,list_runs, list_ds, h_values, catchme
     ax.set_title('Discharge '+stationname)     
     fig.tight_layout()
     fig.canvas.draw()
-    fig.savefig(path+filename, dpi=500) # for thesis report
+    fig.savefig(path+filename, dpi=500)
     #plt.close(fig) # Uncomment if you don't want the plot to pop up
     return
 
