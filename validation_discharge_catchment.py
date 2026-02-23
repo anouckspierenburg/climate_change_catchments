@@ -1,6 +1,7 @@
 #######################################################################################
-# This script plots and stores the observational, historical and future monthly discharge in a specific station.
-# It adds the 95% confidence interval over the 30 year period.
+# This script plots discharge in a specific station:
+# - it loads the observational, historical and future monthly discharge 
+# - it adds the 95% confidence interval over the 30 year period.
 # At the bottom the station can be chosen.
 #######################################################################################
 
