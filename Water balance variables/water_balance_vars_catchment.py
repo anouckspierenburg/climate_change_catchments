@@ -9,27 +9,13 @@
 #######################################################################################
 # Imports needed
 #######################################################################################
-import earthkit.data as ekd
 import earthkit.hydro as ekh
-import earthkit.plots as ekp
 import numpy as np
-import geopandas as gpd
-import pickle
 import intake
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib as mpl
-import earthkit.plots.quickplot as qplot
-from earthkit.regrid import interpolate
-from earthkit.data import from_source
 import xarray as xr
-from datetime import datetime, timedelta, date
-from dateutil.relativedelta import relativedelta
-import matplotlib.cm as cm
-from matplotlib import colors,colorbar
-import hydroeval
 from scipy import stats
-import time
 plt.rcdefaults()
 
 #######################################################################################
@@ -38,18 +24,18 @@ plt.rcdefaults()
 # Load observational data
 path_obs = '/home/b/b301048/NextGEMS_hackathon/Observations/station_attributes_with_obsdis24h_197001-202312_v4.0_20240216_withEFAS.nc'
 obs = xr.open_dataset(path_obs).load()
-## Load IFS data
+# Load IFS data
 cat = intake.open_catalog("https://data.nextgems-h2020.eu/catalog.yaml")
 ds_m = cat.IFS['IFS_9-FESOM_5-production']['2D_monthly_0.25deg'].to_dask()
-ds_m['time']=ds_m.time-np.timedelta64(1,'D')
+ds_m['time'] = ds_m.time-np.timedelta64(1, 'D')
 ds_hist_m = cat.IFS['IFS_9-FESOM_5-production-hist']['2D_monthly_0.25deg'].to_dask()
-ds_hist_m['time']=ds_hist_m.time-np.timedelta64(1,'D') #changes accumulated variables to the correct month
-## Load river network
+ds_hist_m['time']=ds_hist_m.time-np.timedelta64(1, 'D')  # changes accumulated variables to the correct month
+# Load river network
 network15 = ekh.river_network.load("cama_15min","4")
-# get gridsizes
+# get grid sizes
 path_area = '../../grd_area_data/ncdata.nc'
 grdarea = xr.open_dataset(path_area).load()['grdare']
-grdarea2= grdarea.to_numpy()
+grdarea2 = grdarea.to_numpy()
 
 #######################################################################################
 # Functions needed for calculating 
@@ -91,12 +77,12 @@ def interpolate_IFS(var1, ds, grdarea=grdarea):
     new_lons = np.linspace(-179.875, 179.875, 1440)
     ds_inter = new_da3.interp(time=time_vals, lat=new_lats, lon=new_lons)
     #if you want m^3
-    ds_inter_area = ds_inter*grdarea  #ds*grdsize for accurrate outcomes 
+    ds_inter_area = ds_inter*grdarea  # ds*grdsize for accurate outcomes
     return ds_inter_area
 
 vars1 = ['tp','sro','ssro','e'] 
 # Interpolate the values to network for all variables
-inter_ds_fut = [interpolate_IFS(var1, ds_m) for var1 in vars1] # load them once to save time plotting
+inter_ds_fut = [interpolate_IFS(var1, ds_m) for var1 in vars1]  # load them once to save time plotting
 inter_ds_hist = [interpolate_IFS(var1, ds_hist_m) for var1 in vars1]
 
 def upstream_mean_from_sum_catchment(ds_inter_area, grdc_stationname):
@@ -124,13 +110,13 @@ def monthly_mean_xarray(station_ds, time_vals, var1):
 #######################################################################################
 # Functions needed for plotting and calling
 #######################################################################################
-def timeseries_station_all_vars(path, vars1, list_ds, catchment, h_values, station, future=True, plot_title=False, dS=False):
+def timeseries_station_all_vars(path, list_ds, catchment, h_values, station, future=True, plot_title=False, dS=False):
     """
     This function plots the future or historical upstream mean of the water balance variables, optionally together with the storage term dS.
     """
     fontsize = 12
-    months = ['J','F','M','A','M','J','J','A','S','O','N','D']
-    days_per_month = [31,28.25,31,30,31,30,31,31,30,31,30,31]
+    months = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D']
+    days_per_month = [31, 28.25, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
     if future:
         filename = str(catchment+'_'+station+'_fut_ci_all_vars')
         timing = 'Future '
@@ -140,9 +126,9 @@ def timeseries_station_all_vars(path, vars1, list_ds, catchment, h_values, stati
     colors = ['tab:blue', 'tab:purple', 'tab:green', 'tab:red']
     names = ['Precipitation','Surface runoff','Subsurface runoff','Evaporation']
     fig, ax = plt.subplots()
-    for (name,ds,color,h) in zip(names,list_ds,colors,h_values):
+    for (name, ds, color, h) in zip(names, list_ds, colors, h_values):
         ds = ds/days_per_month
-        ax.plot(ds.month, ds, color,label=name)
+        ax.plot(ds.month, ds, color, label=name)
         h = h/days_per_month
         lower = ds-h
         upper = ds+h
@@ -165,27 +151,27 @@ def timeseries_station_all_vars(path, vars1, list_ds, catchment, h_values, stati
     plt.savefig(path+filename+'.pdf', dpi=500)
     return plt.show
 
-def timeseries_station_diff_all_vars(path, vars1, list_ds, catchment, station, plot_title=False):
+def timeseries_station_diff_all_vars(path, list_ds, catchment, station, plot_title=False):
     """
     This function plots the difference between the future and historical upstream mean of the water balance variables.
     """
     fontsize = 12
-    months = ['J','F','M','A','M','J','J','A','S','O','N','D']
-    days_per_month = [31,28.25,31,30,31,30,31,31,30,31,30,31]
+    months = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D']
+    days_per_month = [31, 28.25, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
     filename = str(catchment+'_'+station+'_diff_all_vars')
     colors = ['tab:blue', 'tab:purple', 'tab:green', 'tab:red']
     names = ['Precipitation','Surface runoff','Subsurface runoff','Evaporation']
     fig, ax = plt.subplots()
-    for (var1,ds,color,name) in zip(vars1,list_ds,colors,names):
+    for (ds,color,name) in zip(list_ds,colors,names):
         ds = ds/days_per_month
-        ax.plot(ds.month, ds, color,label=name, linewidth=2)
+        ax.plot(ds.month, ds, color, label=name, linewidth=2)
     ax.axhline(0, color='black', linewidth=1)  
     plt.legend(fontsize=fontsize, loc='best')
     ax.set_xticks(list_ds[1].month, labels=months,fontsize=fontsize)
     ax.set_xlim(list_ds[1].month[0], list_ds[1].month[-1])
     ax.set_xlabel('Months',fontsize=fontsize)
     ax.grid(True, linestyle='--', alpha=0.7)
-    ax.set_ylabel('Difference ($mm/day$)',fontsize=fontsize)     #decomment
+    ax.set_ylabel('Difference ($mm/day$)',fontsize=fontsize)
     if plot_title:
         plt.title('Upstream mean difference of '+catchment+' in '+station, fontsize=fontsize)
     plt.tight_layout()
@@ -193,7 +179,7 @@ def timeseries_station_diff_all_vars(path, vars1, list_ds, catchment, station, p
     return plt.show
     
 #######################################################################################
-# Applied functions yearly mean plot easily changable
+# Applied functions yearly mean plot easily changeable
 #######################################################################################
 def calc_and_plot_all_vars_per_station(path, catchment, grdc_stationname, stationname, future=True, plot_title=False, dS=False, difference=False):
     """
@@ -204,23 +190,23 @@ def calc_and_plot_all_vars_per_station(path, catchment, grdc_stationname, statio
     vars1 = ['tp','sro','ssro','e']
     # Choose difference or specific timing
     if difference:
-        total_ds = [upstream_mean_from_sum_catchment(ds_fut,grdc_stationname)-upstream_mean_from_sum_catchment(ds_hist,grdc_stationname) for ds_fut,ds_hist in zip(inter_ds_fut,inter_ds_hist)]
+        total_ds = [upstream_mean_from_sum_catchment(ds_fut, grdc_stationname)-upstream_mean_from_sum_catchment(ds_hist, grdc_stationname) for ds_fut,ds_hist in zip(inter_ds_fut,inter_ds_hist)]
     else:
         if future:
             inter_ds = inter_ds_fut
         else:
             inter_ds = inter_ds_hist
         # Calculate the upstream means for all variables and all stations
-        total_ds = [upstream_mean_from_sum_catchment(ds,grdc_stationname) for ds in inter_ds] # 4 var 
+        total_ds = [upstream_mean_from_sum_catchment(ds, grdc_stationname) for ds in inter_ds]  # 4 var
     # Get the mean yearly values
     signs = [1,1,1,-1] # -1 for evaporation
-    list_vars = [monthly_mean_xarray(ds,time_vals,var1)*sign for ds,var1,sign in zip(total_ds,vars1, signs)]
+    list_vars = [monthly_mean_xarray(ds, time_vals, var1)*sign for ds, var1, sign in zip(total_ds, vars1, signs)]
     list_vars_m = [list_var.groupby(list_var['time'].dt.month).mean() for list_var in list_vars]
-    if difference==False:
+    if difference == False:
         h_values = calc_confidence_interval(list_vars, daily=False)
-        timeseries_station_all_vars(path, vars1, list_vars_m, catchment, h_values, stationname, future, plot_title, dS)
+        timeseries_station_all_vars(path, list_vars_m, catchment, h_values, stationname, future, plot_title, dS)
     else:
-        timeseries_station_diff_all_vars(path, vars1, list_vars_m, catchment, stationname, plot_title)
+        timeseries_station_diff_all_vars(path, list_vars_m, catchment, stationname, plot_title)
     return    
 
 #######################################################################################

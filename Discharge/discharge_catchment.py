@@ -1,21 +1,16 @@
 #######################################################################################
 # This script plots discharge in a specific station:
 # - it loads the observational, historical and future monthly discharge 
-# - it adds the 95% confidence interval over the 30 year period.
+# - it adds the 95% confidence interval over the 30-year period.
 # At the bottom the station can be chosen.
 #######################################################################################
-
 
 #######################################################################################
 # Imports needed
 #######################################################################################
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib as mpl
 import xarray as xr
-import matplotlib.cm as cm
-from matplotlib import colors,colorbar
 from scipy import stats
 
 #######################################################################################
@@ -31,9 +26,9 @@ def calc_confidence_interval(list_ds, daily=True):
         list_ds = [ds.resample({'time':'ME'}).mean() for ds in list_ds]
     stds = [ds.groupby('time.month').std(ddof=1) for ds in list_ds]
     n_count = [ds.groupby('time.month').count() for ds in list_ds]
-    sems = [std/np.sqrt(n) for std,n in zip(stds,n_count)]
+    sems = [std/np.sqrt(n) for std,n in zip(stds, n_count)]
     t_vals = [stats.t.ppf(0.975, n - 1) for n in n_count] 
-    h_values = [t_val * sem for t_val,sem in zip(t_vals,sems)]
+    h_values = [t_val * sem for t_val,sem in zip(t_vals, sems)]
     return h_values
 
 def timeseries_stations_validation_ci(path,list_runs, list_ds, h_values, catchment, stationname):
@@ -42,22 +37,22 @@ def timeseries_stations_validation_ci(path,list_runs, list_ds, h_values, catchme
     It adds 95% confidence intervals, and stores the plot.
     """
     fontsize = 12 
-    months = ['J','F','M','A','M','J','J','A','S','O','N','D']
-    colors = ['#555555','#008080', 'tab:orange'] # gray,teal,orange
-    linestyles = ['--','-','-']
-    filename=str(catchment+'_'+stationname+'_ci_monthly_mean_discharge.pdf')
+    months = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D']
+    colors = ['#555555','#008080', 'tab:orange']  # gray,teal,orange
+    linestyles = ['--', '-', '-']
+    filename = str(catchment+'_'+stationname+'_ci_monthly_mean_discharge.pdf')
     fig, ax = plt.subplots()
-    for (run,ds,color,h,linestyle) in zip(list_runs,list_ds,colors,h_values,linestyles):
+    for (run, ds, color, h, linestyle) in zip(list_runs, list_ds, colors, h_values, linestyles):
         ax.plot(ds.month, ds, color, linestyle=linestyle, label=run)
         lower = ds-h
         upper = ds+h
         ax.fill_between(ds.month, lower.values, upper.values, alpha=0.3, color=color)
-    ax.legend(loc='upper right',fontsize=fontsize)     
-    ax.set_xticks(list_ds[1].month, labels=months,fontsize=fontsize)
+    ax.legend(loc='upper right', fontsize=fontsize)
+    ax.set_xticks(list_ds[1].month, labels=months, fontsize=fontsize)
     ax.set_xlim(list_ds[1].month[0], list_ds[1].month[-1])
     ax.set_ylim(0)
-    ax.set_xlabel('Months',fontsize=fontsize)
-    ax.set_ylabel('Discharge ($m^3/s$)',fontsize=fontsize)
+    ax.set_xlabel('Months', fontsize=fontsize)
+    ax.set_ylabel('Discharge ($m^3/s$)', fontsize=fontsize)
     ax.grid(True, linestyle='--', alpha=0.7)
     ax.set_title('Discharge '+stationname)     
     fig.tight_layout()
@@ -76,7 +71,7 @@ def load_and_make_discharge_timeseries(path,filename, grdc_stationname, catchmen
     # Load discharge data (check if the path is correct for your data)
     path_obs = '/home/b/b301048/NextGEMS_hackathon/Observations/station_attributes_with_obsdis24h_197001-202312_v4.0_20240216_withEFAS.nc'
     obs = xr.open_dataset(path_obs).load()
-    dis_h = xr.open_dataset('../../stored_datasets/discharge_'+filename+'_30yr_hist.nc').load()
+    dis_h = xr.open_dataset('../../stored_datasets/discharge_'+filename+'_30yr_hist.nc').load()  # Check your path
     dis =  xr.open_dataset('../../stored_datasets/discharge_'+filename+'_30yr_fut.nc').load()
     # Resample to daily from hourly
     cama_h = dis_h.dis.resample({'time':'D'}).mean()
